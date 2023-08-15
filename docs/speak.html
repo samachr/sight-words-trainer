@@ -53,6 +53,10 @@
       'the',
       'to'
     ]
+    const phoneticMatch = {
+      two: 'to',
+      c: 'see',
+    }
     let correctIndex = -1;
     let promptCount = 0;
     let lastTime = new Date();
@@ -102,7 +106,7 @@
     function checkWord(word) {
       element = document.getElementById(`word-${words[correctIndex]}`)
       const previousBackground = element.style.background
-      if (words.indexOf(word) == correctIndex) {
+      if (words.indexOf(word) == correctIndex || words.indexOf(phoneticMatch[word]) == correctIndex) {
         promptCount++;
         timings[word] = new Date() - lastTime;
         element.style.background = 'green';
