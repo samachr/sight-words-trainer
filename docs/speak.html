@@ -53,7 +53,7 @@
       'the',
       'to'
     ]
-    let correctIndex = 0;
+    let correctIndex = -1;
     let promptCount = 0;
     let lastTime = new Date();
 
@@ -99,7 +99,8 @@
       speak(words[correctIndex])
     }
 
-    function checkWord(word, element) {
+    function checkWord(word) {
+      element = document.getElementById(`word-${words[correctIndex]}`)
       const previousBackground = element.style.background
       if (words.indexOf(word) == correctIndex) {
         promptCount++;
@@ -109,16 +110,18 @@
           element.style.background = previousBackground
           newWord()
         }, 500);
+        return true;
       } else {
         element.style.background = 'red';
         setTimeout(() => {
           element.style.background = previousBackground
           speakCurrentWord()
         }, 500);
+        return false;
       }
     }
 
-    function listenForWord(word) {
+    function listenForWord(word, onready) {
       var speechRecognitionList = new SpeechGrammarList();
       speechRecognitionList.addFromString('#JSGF V1.0; grammar word; public <word> = ' + word +';', 1);
 
@@ -130,17 +133,36 @@
 
       recognition.start();
 
-      recognition.onresult = (event) => checkWord(
-        event.results[0][0].transcript.toLowerCase(),
-        document.getElementById(`word-${word}`)
-      )
-      recognition.onspeechend = () => recognition.stop()
+      let matched = false;
 
-      recognition.onerror = (event) => console.log('Error occurred in recognition: ' + event.error)
-      recognition.onaudiostart = (event) => console.log('SpeechRecognition.onaudiostart');
+      recognition.onresult = (event) => {
+        console.log(event)
+        matched = checkWord(
+          event.results[0][0].transcript.toLowerCase()
+        )
+        // recognition.stop();
+      }
+      recognition.onspeechend = () => {
+        console.log('SpeechRecognition.onspeechend')
+        // recognition.stop()
+      }
+
+      recognition.onerror = (event) => {
+        console.log('Error occurred in recognition: ' + event.error);
+        checkWord('This error is not a match!')
+      }
+      recognition.onaudiostart = (event) => {
+        console.log('SpeechRecognition.onaudiostart')
+        onready()
+      };
       recognition.onaudioend = (event) => console.log('SpeechRecognition.onaudioend');
-      recognition.onend = (event) => console.log('SpeechRecognition.onend');
-      recognition.onnomatch = (event) => console.log('SpeechRecognition.onnomatch');
+      recognition.onend = (event) => {
+        console.log('SpeechRecognition.onend')
+        if (!matched && correctIndex != -1) {
+          checkWord('This error is not a match!')
+        }
+      };
+      recognition.onnomatch = () => console.log('SpeechRecognition.onnomatch');
       recognition.onsoundstart = (event) => console.log('SpeechRecognition.onsoundstart');
       recognition.onsoundend = (event) => console.log('SpeechRecognition.onsoundend');
       recognition.onspeechstart = (event) => console.log('SpeechRecognition.onspeechstart');
@@ -150,12 +172,13 @@
     function speak(word) {
       const container = document.getElementById('responseOptions')
       container.innerHTML = ''
-      const result = document.createElement('button')
-      result.innerHTML = word;
-      result.className = 'response-option'
-      result.id = `word-${word}`
-      container.appendChild(result)
-      listenForWord(word);
+      listenForWord(word, () => {
+        const result = document.createElement('button')
+        result.innerHTML = word;
+        result.className = 'response-option'
+        result.id = `word-${word}`
+        container.appendChild(result)
+      });
     }
   </script>
 </body>
