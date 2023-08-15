@@ -121,7 +121,9 @@
 
     function speak(text) {
       window.speechSynthesis.cancel()
-      window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+      const utterance = new SpeechSynthesisUtterance(text)
+      utterance.rate = 0.6;
+      window.speechSynthesis.speak(utterance);
       console.log('speaking text: ' + text)
     }
 
