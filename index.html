@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, user-scalable=no">
+  <!-- <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"> -->
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.bundle.min.js"></script> -->
+  <!-- <link rel="stylesheet" href="app.css"> -->
+  <style>
+    #responseOptions {
+      display: flex;
+      flex-direction: column;
+    }
+    .response-option {
+      font-size: xx-large;
+      padding: 20px;
+      flex-grow: 1;
+    }
+    html, body, #responseOptions {
+      height: 100%;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+    }
+    #overlay {
+      z-index: 10;
+      position: absolute;
+      left: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: gray;
+    }
+  </style>
+</head>
+<body>
+  <div id="responseOptions">
+  </div>
+  <div id="overlay" onclick="startGame()">
+    <button onclick="startGame()">Play!</button>
+  </div>
+  <script>
+    const words = ['at', 'am', 'go']
+    let correctIndex = 0;
+    let promptCount = 0;
+
+    function startGame() {
+      newWord();
+      document.getElementById('overlay').style.display='none';
+    }
+
+    function stopGame() {
+      promptCount = 0;
+      document.getElementById('overlay').style.display='flex';
+    }
+
+    function newWord() {
+      if(promptCount == 10) {
+        stopGame();
+      } else {
+        correctIndex = Math.floor(Math.random() * words.length);
+        speakCurrentWord()
+      }
+    }
+
+    window.newWord = newWord;
+    window.startGame = startGame;
+
+    function speakCurrentWord() {
+      speak(words[correctIndex])
+    }
+
+    function checkWord(word, element) {
+      const previousBackground = element.style.background
+      if (words.indexOf(word) == correctIndex) {
+        promptCount++;
+        element.style.background = 'green';
+        setTimeout(() => {
+          element.style.background = previousBackground
+          newWord()
+        }, 500);
+      } else {
+        element.style.background = 'red';
+        setTimeout(() => {
+          element.style.background = previousBackground
+          speakCurrentWord()
+        }, 500);
+      }
+    }
+
+    function showWords() {
+      const container = document.getElementById('responseOptions')
+      words.forEach(word => {
+        const result = document.createElement('button')
+        result.innerHTML = word;
+        result.className = 'response-option'
+        result.id = `word-${word}`
+        result.onclick = () => checkWord(word, result)
+        container.appendChild(result)
+      })
+    }
+
+    // let's use this to do some speech recognition work
+    // function initGrammar() {
+    //   let grammar = '#JSGF V1.0; grammar actions; public <actions> = ' + words.join(' | ') + ';';
+    //   let speechRecognitionList = new webkitSpeechGrammarList();
+    //   speechRecognitionList.addFromString(grammar, 1);
+    //   speech.grammars = speechRecognitionList;
+    //   speech.lang = "en-US";
+    // }
+
+
+    function speak(text) {
+      window.speechSynthesis.cancel()
+      window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+      console.log('speaking text: ' + text)
+    }
+
+    showWords();
+  </script>
+</body>
+</html>
