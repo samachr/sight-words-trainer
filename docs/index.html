@@ -86,6 +86,7 @@
         correctIndex = words.indexOf(nextWord);
         speakCurrentWord()
         lastTime = new Date();
+        showWords()
       }
     }
 
@@ -117,7 +118,15 @@
 
     function showWords() {
       const container = document.getElementById('responseOptions')
-      words.forEach(word => {
+      container.innerHTML=''
+      let wordsToShow = [words[correctIndex]]
+      if (correctIndex + 1 == words.length) {
+        wordsToShow.push(words[correctIndex-1])
+      } else {
+        wordsToShow.push(words[correctIndex+1])
+      }
+
+      wordsToShow.forEach(word => {
         const result = document.createElement('button')
         result.innerHTML = word;
         result.className = 'response-option'
@@ -145,8 +154,6 @@
       window.speechSynthesis.speak(utterance);
       console.log('speaking text: ' + text)
     }
-
-    showWords();
   </script>
 </body>
 </html>
