@@ -52,6 +52,18 @@
     ]
     let correctIndex = 0;
     let promptCount = 0;
+    let lastTime = new Date();
+
+    let timings = words.reduce((obj, word) => {
+      obj[word] = 100000
+      return obj;
+    }, {})
+
+    function getNthWorstWord(wordIndex) {
+      const sortedTimings = Object.entries(timings).sort(([,a],[,b]) => b-a);
+      console.log(sortedTimings)
+      return sortedTimings[wordIndex][0]
+    }
 
     function startGame() {
       newWord();
@@ -67,8 +79,13 @@
       if(promptCount == 10) {
         stopGame();
       } else {
-        correctIndex = Math.floor(Math.random() * words.length);
+        let nextWord = getNthWorstWord(0);
+        if (words.indexOf(nextWord) == correctIndex) {
+          nextWord = getNthWorstWord(1);
+        }
+        correctIndex = words.indexOf(nextWord);
         speakCurrentWord()
+        lastTime = new Date();
       }
     }
 
@@ -83,6 +100,7 @@
       const previousBackground = element.style.background
       if (words.indexOf(word) == correctIndex) {
         promptCount++;
+        timings[word] = new Date() - lastTime;
         element.style.background = 'green';
         setTimeout(() => {
           element.style.background = previousBackground
