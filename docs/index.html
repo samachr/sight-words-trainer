@@ -126,7 +126,7 @@
         wordsToShow.push(words[correctIndex+1])
       }
 
-      wordsToShow.forEach(word => {
+      wordsToShow.sort(() => Math.random() - 0.5).forEach(word => {
         const result = document.createElement('button')
         result.innerHTML = word;
         result.className = 'response-option'
