@@ -133,7 +133,7 @@
       recognition.grammars = speechRecognitionList;
       recognition.lang = 'en-US';
       recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
+      recognition.maxAlternatives = 10;
 
       recognition.start();
 
@@ -141,6 +141,17 @@
 
       recognition.onresult = (event) => {
         console.log(event)
+
+        let word = results[0][0].transcript;
+
+        for (let result in event.results[0]) {
+          console.log(results[0][result].transcript)
+          if (new RegExp(words.join("|")).test(results[0][result].transcript)) {
+            word = results[0][result].transcript;
+            break;
+          }
+        }
+
         matched = checkWord(
           event.results[0][0].transcript.toLowerCase()
         )
