@@ -48,7 +48,17 @@
       'at',
       'can',
       'go',
-      'is'
+      'is',
+      'like',
+      'me',
+      'see',
+      'the',
+      'to',
+      'dad',
+      'he',
+      'in',
+      'it',
+      'look'
     ]
     let correctIndex = 0;
     let promptCount = 0;
@@ -149,7 +159,7 @@
     function speak(text) {
       window.speechSynthesis.cancel()
       const utterance = new SpeechSynthesisUtterance(text)
-      utterance.rate = 0.6;
+      utterance.rate = 0.8;
       utterance.lang = 'en-US';
       window.speechSynthesis.speak(utterance);
       console.log('speaking text: ' + text)
