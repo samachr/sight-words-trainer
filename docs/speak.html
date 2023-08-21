@@ -127,7 +127,7 @@
 
     function listenForWord(word, onready) {
       var speechRecognitionList = new SpeechGrammarList();
-      speechRecognitionList.addFromString('#JSGF V1.0; grammar word; public <word> = ' + word +';', 1);
+      speechRecognitionList.addFromString('#JSGF V1.0; grammar phrases; public <phrase> = ' + words.join(' | ') +';', 1);
 
       var recognition = new SpeechRecognition();
       recognition.grammars = speechRecognitionList;
@@ -141,7 +141,7 @@
 
       recognition.onresult = (event) => {
         console.log(event)
-
+        const results = event.results
         let word = results[0][0].transcript;
 
         for (let result in event.results[0]) {
