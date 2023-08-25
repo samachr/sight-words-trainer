@@ -129,7 +129,7 @@
         let result = null;
         result = document.createElement('button')
         result.className = 'wordlist-option'
-        result.innerHTML = '<div>' + (index+1) + '</div>' + wordlist.map(word => `<div>${word}: ${allTimings[index][word]/1000}</div>`).join('')
+        result.innerHTML = wordlist.map(word => `<div>${word}: ${(allTimings[index][word]/1000).toFixed(1)}</div>`).join('')
         result.onclick = () => window.startGame(index)
         overlay.appendChild(result)
       })
