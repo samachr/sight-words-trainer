@@ -7,11 +7,11 @@
   <!-- <link rel="stylesheet" href="app.css"> -->
   <style>
     #responseOptions {
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      grid-template-columns: auto auto auto;
     }
     .response-option {
-      font-size: xx-large;
+      font-size: 48px;
       padding: 20px;
       flex-grow: 1;
     }
@@ -21,6 +21,10 @@
     html, body {
       margin: 0;
       padding: 0;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
     }
     #overlay {
       z-index: 10;
@@ -34,11 +38,25 @@
       align-items: center;
       background: gray;
     }
+    progress {
+      border-radius: 7px;
+      width: 100%;
+      height: 30px;
+      box-shadow: 1px 1px 4px rgba( 0, 0, 0, 0.2 );
+    }
+    progress::-webkit-progress-bar {
+      background-color: gray;
+      border-radius: 0px;
+    }
+    progress::-webkit-progress-value {
+      background-color: #3465a4;
+      border-radius: 5px;
+    }
   </style>
 </head>
 <body>
-  <div id="responseOptions">
-  </div>
+  <div id="responseOptions"></div>
+  <progress id="progress" value="0" max="100"> </progress>
   <div id="overlay" onclick="startGame()">
     <button onclick="startGame()">Play!</button>
   </div>
@@ -108,10 +126,11 @@
           newWord()
         }, 500);
       } else {
+        timings[word] = timings[word] + (new Date() - lastTime);
         element.style.background = 'red';
         setTimeout(() => {
           element.style.background = previousBackground
-          speakCurrentWord()
+          newWord()
         }, 500);
       }
     }
@@ -120,31 +139,29 @@
       const container = document.getElementById('responseOptions')
       container.innerHTML=''
       let wordsToShow = [words[correctIndex]]
-      if (correctIndex + 1 == words.length) {
-        wordsToShow.push(words[correctIndex-1])
-      } else {
-        wordsToShow.push(words[correctIndex+1])
-      }
+      let otherWordOptions = words.slice()
+      otherWordOptions.splice(correctIndex, 1)
+      wordsToShow.push(otherWordOptions[Math.floor(Math.random() * otherWordOptions.length)]);
 
-      wordsToShow.sort(() => Math.random() - 0.5).forEach(word => {
-        const result = document.createElement('button')
-        result.innerHTML = word;
-        result.className = 'response-option'
+      [...Array(10).keys(), ...wordsToShow].sort(() => Math.random() - 0.5).forEach(word => {
+        let result = null;
+        if (Number.isInteger(word)) {
+          result = document.createElement('div')
+        } else {
+          result = document.createElement('button')
+          result.innerHTML = word;
+          result.onclick = () => checkWord(word, result)
+        }
         result.id = `word-${word}`
-        result.onclick = () => checkWord(word, result)
+        result.className = 'response-option'
         container.appendChild(result)
       })
+
+      document.getElementById("progress").value = (promptCount) / 10 * 100;
+      document.getElementById("progress").innerHTML = (promptCount) / 10 * 100;
+
+      Object.keys(timings).forEach(key => timings[key] += 500)
     }
-
-    // let's use this to do some speech recognition work
-    // function initGrammar() {
-    //   let grammar = '#JSGF V1.0; grammar actions; public <actions> = ' + words.join(' | ') + ';';
-    //   let speechRecognitionList = new webkitSpeechGrammarList();
-    //   speechRecognitionList.addFromString(grammar, 1);
-    //   speech.grammars = speechRecognitionList;
-    //   speech.lang = "en-US";
-    // }
-
 
     function speak(text) {
       window.speechSynthesis.cancel()
