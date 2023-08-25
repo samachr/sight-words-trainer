@@ -30,9 +30,8 @@
       top: 0;
       right: 0;
       bottom: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      display: grid;
+      grid-template-columns: auto auto auto;
       background: gray;
     }
     progress {
@@ -49,16 +48,44 @@
       background-color: #3465a4;
       border-radius: 5px;
     }
+    .wordlist-option {
+      font-size: 24px;
+      border-radius: 8px;
+      margin: 5px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
   <div id="responseOptions"></div>
   <progress id="progress" value="0" max="100"> </progress>
-  <div id="overlay" onclick="startGame()">
-    <button onclick="startGame()">Play!</button>
-  </div>
+  <div id="overlay"></div>
   <script>
-    const words = [
+    (function () {
+    const wordLists = [
+      ["am", "at", "can", "go", "is"],
+      ["like", "me", "see", "the", "to"],
+      ["dad", "he", "in", "it", "look"],
+      ["mom", "my", "on", "up", "we"],
+      ["and", "are", "come", "for", "got"],
+      ["here", "not", "play", "said", "you"],
+      ["day", "down", "into", "looking", "she"],
+      ["they", "went", "where", "will", "your"],
+      ["all", "away", "back", "big", "her"],
+      ["over", "this", "want", "who", "with"]
+    ]
+
+    wordLists.forEach((wordlist, index)=> {
+      const overlay = document.getElementById("overlay")
+      let result = null;
+        result = document.createElement('button')
+        result.className = 'wordlist-option'
+        result.innerHTML = '<div>' + (index+1) + '</div><div>' + wordlist.join('</div><div>') + '</div>'
+        result.onclick = () => window.startGame(index)
+        overlay.appendChild(result)
+    })
+
+    let words = [
       'dad',
       'he',
       'in',
@@ -68,29 +95,36 @@
     let correctIndex = 0;
     let promptCount = 0;
     let lastTime = new Date();
-
+    let allTimings = wordLists.map(wordlist => {
+      return wordlist.reduce((obj, word) => {
+        obj[word] = 100000
+        return obj;
+      }, {})
+    })
     let timings = words.reduce((obj, word) => {
       obj[word] = 100000
       return obj;
     }, {})
 
-    function getNthWorstWord(wordIndex) {
+    let getNthWorstWord = (wordIndex) => {
       const sortedTimings = Object.entries(timings).sort(([,a],[,b]) => b-a);
       console.log(sortedTimings)
       return sortedTimings[wordIndex][0]
     }
 
-    function startGame() {
+    let startGame = (wordListIndex) => {
+      words = wordLists[wordListIndex]
+      timings = allTimings[wordListIndex]
       newWord();
       document.getElementById('overlay').style.display='none';
     }
 
-    function stopGame() {
+    let stopGame = () => {
       promptCount = 0;
-      document.getElementById('overlay').style.display='flex';
+      document.getElementById('overlay').style.display='grid';
     }
 
-    function newWord() {
+    let newWord = () => {
       if(promptCount == 10) {
         stopGame();
       } else {
@@ -108,11 +142,11 @@
     window.newWord = newWord;
     window.startGame = startGame;
 
-    function speakCurrentWord() {
+    let speakCurrentWord = () => {
       speak(words[correctIndex])
     }
 
-    function checkWord(word, element) {
+    let checkWord = (word, element, words) => {
       const previousBackground = element.style.background
       if (words.indexOf(word) == correctIndex) {
         promptCount++;
@@ -132,14 +166,14 @@
       }
     }
 
-    function showWords() {
+    let showWords = () => {
       const container = document.getElementById('responseOptions')
       container.innerHTML=''
       let wordsToShow = [words[correctIndex]]
       let otherWordOptions = words.slice()
       otherWordOptions.splice(correctIndex, 1)
       wordsToShow.push(otherWordOptions[Math.floor(Math.random() * otherWordOptions.length)]);
-
+      console.log(words);
       [...Array(10).keys(), ...wordsToShow].sort(() => Math.random() - 0.5).forEach(word => {
         let result = null;
         if (Number.isInteger(word)) {
@@ -148,9 +182,10 @@
           result = document.createElement('button')
           result.innerHTML = word;
           if ('ontouchstart' in window) {
-            result.ontouchstart = () => checkWord(word, result)
+            result.ontouchstart = () => checkWord(word, result, words)
           } else {
-            result.onclick = () => checkWord(word, result)
+            result.onclick = () => checkWord(word, result, words)
+            // result.onclick = ((words) => () => checkWord(word, result, words))(words)
           }
         }
         result.id = `word-${word}`
@@ -164,7 +199,7 @@
       Object.keys(timings).forEach(key => timings[key] += 500)
     }
 
-    function speak(text) {
+    let speak = (text) => {
       window.speechSynthesis.cancel()
       const utterance = new SpeechSynthesisUtterance(text)
       utterance.rate = 0.8;
@@ -172,6 +207,7 @@
       window.speechSynthesis.speak(utterance);
       console.log('speaking text: ' + text)
     }
+  })();
   </script>
 </body>
 </html>
