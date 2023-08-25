@@ -75,15 +75,8 @@
       ["over", "this", "want", "who", "with"]
     ]
 
-    wordLists.forEach((wordlist, index)=> {
-      const overlay = document.getElementById("overlay")
-      let result = null;
-        result = document.createElement('button')
-        result.className = 'wordlist-option'
-        result.innerHTML = '<div>' + (index+1) + '</div><div>' + wordlist.join('</div><div>') + '</div>'
-        result.onclick = () => window.startGame(index)
-        overlay.appendChild(result)
-    })
+    // update this after the game and show timings here.
+    // store in local storage between plays
 
     let words = [
       'dad',
@@ -95,12 +88,19 @@
     let correctIndex = 0;
     let promptCount = 0;
     let lastTime = new Date();
-    let allTimings = wordLists.map(wordlist => {
-      return wordlist.reduce((obj, word) => {
-        obj[word] = 100000
-        return obj;
-      }, {})
-    })
+
+    const storedTimings = localStorage.getItem("storedTimings");
+    let allTimings = {}
+    if (storedTimings) {
+      allTimings = JSON.parse(storedTimings)
+    } else {
+      allTimings = wordLists.map(wordlist => {
+        return wordlist.reduce((obj, word) => {
+          obj[word] = 100000
+          return obj;
+        }, {})
+      })
+    }
     let timings = words.reduce((obj, word) => {
       obj[word] = 100000
       return obj;
@@ -121,7 +121,19 @@
 
     let stopGame = () => {
       promptCount = 0;
-      document.getElementById('overlay').style.display='grid';
+      const storedTimings = localStorage.setItem("storedTimings", JSON.stringify(allTimings));
+      const overlay = document.getElementById('overlay')
+      overlay.innerHTML = ''
+      wordLists.forEach((wordlist, index)=> {
+        const overlay = document.getElementById("overlay")
+        let result = null;
+        result = document.createElement('button')
+        result.className = 'wordlist-option'
+        result.innerHTML = '<div>' + (index+1) + '</div>' + wordlist.map(word => `<div>${word}: ${allTimings[index][word]/1000}</div>`).join('')
+        result.onclick = () => window.startGame(index)
+        overlay.appendChild(result)
+      })
+      overlay.style.display = 'grid';
     }
 
     let newWord = () => {
@@ -207,6 +219,7 @@
       window.speechSynthesis.speak(utterance);
       console.log('speaking text: ' + text)
     }
+    stopGame();
   })();
   </script>
 </body>
