@@ -85,7 +85,7 @@
       'it',
       'look'
     ]
-    let correctIndex = 0;
+    let correctIndex = -1;
     let promptCount = 0;
     let lastTime = new Date();
 
@@ -108,7 +108,6 @@
 
     let getNthWorstWord = (wordIndex) => {
       const sortedTimings = Object.entries(timings).sort(([,a],[,b]) => b-a);
-      console.log(sortedTimings)
       return sortedTimings[wordIndex][0]
     }
 
@@ -116,7 +115,7 @@
       words = wordLists[wordListIndex]
       timings = allTimings[wordListIndex]
       newWord();
-      document.getElementById('overlay').style.display='none';
+      document.getElementById('overlay').style.display = 'none';
     }
 
     let stopGame = () => {
@@ -168,6 +167,7 @@
           element.style.background = previousBackground
           newWord()
         }, 500);
+        return true;
       } else {
         timings[word] = timings[word] + (new Date() - lastTime);
         element.style.background = 'red';
@@ -175,6 +175,7 @@
           element.style.background = previousBackground
           newWord()
         }, 500);
+        return false;
       }
     }
 

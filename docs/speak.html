@@ -1,17 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta name="viewport" content="width=device-width, user-scalable=no">
-  <!-- <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"> -->
-  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.bundle.min.js"></script> -->
-  <!-- <link rel="stylesheet" href="app.css"> -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <style>
     #responseOptions {
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      grid-template-columns: auto;
     }
     .response-option {
-      font-size: xx-large;
+      font-size: 48px;
       padding: 20px;
       flex-grow: 1;
     }
@@ -22,6 +19,10 @@
       margin: 0;
       padding: 0;
     }
+    body {
+      display: flex;
+      flex-direction: column;
+    }
     #overlay {
       z-index: 10;
       position: absolute;
@@ -29,34 +30,54 @@
       top: 0;
       right: 0;
       bottom: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      display: grid;
+      grid-template-columns: auto auto;
       background: gray;
+    }
+    progress {
+      border-radius: 7px;
+      width: 100%;
+      height: 30px;
+      box-shadow: 1px 1px 4px rgba( 0, 0, 0, 0.2 );
+    }
+    progress::-webkit-progress-bar {
+      background-color: gray;
+      border-radius: 0px;
+    }
+    progress::-webkit-progress-value {
+      background-color: #3465a4;
+      border-radius: 5px;
+    }
+    .wordlist-option {
+      font-size: 20px;
+      border-radius: 8px;
+      margin: 5px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <div id="responseOptions">
-  </div>
-  <div id="overlay" onclick="startGame()">
-    <button onclick="startGame()">Play!</button>
-  </div>
+  <div id="responseOptions"></div>
+  <progress id="progress" value="0" max="100"> </progress>
+  <div id="overlay"></div>
   <script>
+    (function () {
+    const wordLists = [
+      ["am", "at", "can", "go", "is"],
+      ["like", "me", "see", "the", "to"],
+      ["dad", "he", "in", "it", "look"],
+      ["mom", "my", "on", "up", "we"],
+      ["and", "are", "come", "for", "got"],
+      ["here", "not", "play", "said", "you"],
+      ["day", "down", "into", "looking", "she"],
+      ["they", "went", "where", "will", "your"],
+      ["all", "away", "back", "big", "her"],
+      ["over", "this", "want", "who", "with"],
+    ]
     var SpeechRecognition = SpeechRecognition || webkitSpeechRecognition;
     var SpeechGrammarList = SpeechGrammarList || webkitSpeechGrammarList;
     var SpeechRecognitionEvent = SpeechRecognitionEvent || webkitSpeechRecognitionEvent;
-    const words = [
-      'am',
-      'at',
-      'can',
-      'go',
-      'is',
-      'like',
-      'me',
-      'see',
-      'the',
-      'to',
+    let words = [
       'dad',
       'he',
       'in',
@@ -71,29 +92,54 @@
     let promptCount = 0;
     let lastTime = new Date();
 
+    const storedTimings = localStorage.getItem("storedTimingsSpeak");
+    let allTimings = {}
+    if (storedTimings) {
+      allTimings = JSON.parse(storedTimings)
+    } else {
+      allTimings = wordLists.map(wordlist => {
+        return wordlist.reduce((obj, word) => {
+          obj[word] = 100000
+          return obj;
+        }, {})
+      })
+    }
     let timings = words.reduce((obj, word) => {
       obj[word] = 100000
       return obj;
     }, {})
 
-    function getNthWorstWord(wordIndex) {
+    let getNthWorstWord = (wordIndex) => {
       const sortedTimings = Object.entries(timings).sort(([,a],[,b]) => b-a);
-      console.log(sortedTimings)
       return sortedTimings[wordIndex][0]
     }
 
-    function startGame() {
+    let startGame = (wordListIndex) => {
+      words = wordLists[wordListIndex]
+      timings = allTimings[wordListIndex]
       newWord();
-      document.getElementById('overlay').style.display='none';
+      document.getElementById('overlay').style.display = 'none';
     }
 
-    function stopGame() {
+    let stopGame = () => {
       promptCount = 0;
-      document.getElementById('overlay').style.display='flex';
+      const storedTimings = localStorage.setItem("storedTimingsSpeak", JSON.stringify(allTimings));
+      const overlay = document.getElementById('overlay')
+      overlay.innerHTML = ''
+      wordLists.forEach((wordlist, index)=> {
+        const overlay = document.getElementById("overlay")
+        let result = null;
+        result = document.createElement('button')
+        result.className = 'wordlist-option'
+        result.innerHTML = wordlist.map(word => `<div>${word}: ${(allTimings[index][word]/1000).toFixed(1)}</div>`).join('')
+        result.onclick = () => window.startGame(index)
+        overlay.appendChild(result)
+      })
+      overlay.style.display = 'grid';
     }
 
-    function newWord() {
-      if(promptCount == 10) {
+    let newWord = () => {
+      if(promptCount == 5) {
         stopGame();
       } else {
         let nextWord = getNthWorstWord(0);
@@ -109,14 +155,13 @@
     window.newWord = newWord;
     window.startGame = startGame;
 
-    function speakCurrentWord() {
+    let speakCurrentWord = () => {
       speak(words[correctIndex])
     }
 
-    function checkWord(word) {
-      element = document.getElementById(`word-${words[correctIndex]}`)
+    let checkWord = (word, element, words) => {
       const previousBackground = element.style.background
-      if (words.indexOf(word) == correctIndex || words.indexOf(phoneticMatch[word]) == correctIndex) {
+      if (words.indexOf(word) == correctIndex) {
         promptCount++;
         timings[word] = new Date() - lastTime;
         element.style.background = 'green';
@@ -126,10 +171,11 @@
         }, 500);
         return true;
       } else {
+        timings[word] = timings[word] + (new Date() - lastTime);
         element.style.background = 'red';
         setTimeout(() => {
           element.style.background = previousBackground
-          speakCurrentWord()
+          newWord()
         }, 500);
         return false;
       }
@@ -148,43 +194,57 @@
       recognition.start();
 
       let matched = false;
+      let ready = false;
 
       recognition.onresult = (event) => {
-        console.log(event)
         const results = event.results
         let word = results[0][0].transcript;
 
-        for (let result in event.results[0]) {
-          console.log(results[0][result].transcript)
-          if (new RegExp(words.join("|")).test(results[0][result].transcript)) {
-            word = results[0][result].transcript;
-            break;
+        let recognizedWords = []
+        for (let resultListIndex = 0; resultListIndex < event.results.length; resultListIndex++) {
+          for (let resultIndex = 0; resultIndex < event.results[resultListIndex].length; resultIndex++) {
+            result = results[resultListIndex][resultIndex]
+            recognizedWords.push(result.transcript)
           }
         }
 
-        matched = checkWord(
-          event.results[0][0].transcript.toLowerCase()
+        console.log(recognizedWords)
+        word = recognizedWords.find(recognizedWord =>
+          words.indexOf(recognizedWord) != -1 || words.indexOf(phoneticMatch[recognizedWord]) != -1
         )
-        // recognition.stop();
+
+        matched = checkWord(
+          (word || '').toLowerCase(),
+          document.getElementById(`word-${words[correctIndex]}`),
+          words
+        )
       }
       recognition.onspeechend = () => {
         console.log('SpeechRecognition.onspeechend')
-        // recognition.stop()
       }
 
       recognition.onerror = (event) => {
         console.log('Error occurred in recognition: ' + event.error);
-        checkWord('This error is not a match!')
+        checkWord(
+          'This error is not a match!',
+          document.getElementById(`word-${words[correctIndex]}`),
+          words
+        )
       }
       recognition.onaudiostart = (event) => {
         console.log('SpeechRecognition.onaudiostart')
-        onready()
+        ready = true;
+        onready();
       };
       recognition.onaudioend = (event) => console.log('SpeechRecognition.onaudioend');
       recognition.onend = (event) => {
         console.log('SpeechRecognition.onend')
-        if (!matched && correctIndex != -1) {
-          checkWord('This error is not a match!')
+        if (ready && !matched && correctIndex != -1) {
+          checkWord(
+            'This error is not a match!',
+            document.getElementById(`word-${words[correctIndex]}`),
+            words
+          )
         }
       };
       recognition.onnomatch = () => console.log('SpeechRecognition.onnomatch');
@@ -204,7 +264,14 @@
         result.id = `word-${word}`
         container.appendChild(result)
       });
+
+      document.getElementById("progress").value = (promptCount) / 5 * 100;
+      document.getElementById("progress").innerHTML = (promptCount) / 5 * 100;
+
+      Object.keys(timings).forEach(key => timings[key] += 500)
     }
+    stopGame();
+  })();
   </script>
 </body>
 </html>
