@@ -27,7 +27,7 @@
       z-index: 10;
       position: absolute;
       left: 0;
-      top: 0;
+      top: 30px;
       right: 0;
       bottom: 0;
       display: grid;
@@ -54,9 +54,28 @@
       margin: 5px;
       cursor: pointer;
     }
+    #navigation {
+      height: 30px;
+      display: flex;
+      justify-content: space-evenly;
+    }
+    #navigation > a {
+      text-decoration: none;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: gray;
+      width: 100%;
+      height: 100%;
+    }
   </style>
 </head>
 <body>
+  <div id="navigation">
+    <a href="./index.html">Hear</a>
+    <a href="./speak.html">Speak</a>
+  </div>
   <div id="responseOptions"></div>
   <progress id="progress" value="0" max="100"> </progress>
   <div id="overlay"></div>
@@ -88,6 +107,7 @@
     let correctIndex = -1;
     let promptCount = 0;
     let lastTime = new Date();
+    let animating = false;
 
     const storedTimings = localStorage.getItem("storedTimings");
     let allTimings = {}
@@ -136,7 +156,7 @@
     }
 
     let newWord = () => {
-      if(promptCount == 10) {
+      if(promptCount >= 10) {
         stopGame();
       } else {
         let nextWord = getNthWorstWord(0);
@@ -158,12 +178,17 @@
     }
 
     let checkWord = (word, element, words) => {
+      if (animating) {
+        return;
+      }
       const previousBackground = element.style.background
       if (words.indexOf(word) == correctIndex) {
         promptCount++;
         timings[word] = new Date() - lastTime;
         element.style.background = 'green';
+        animating = true;
         setTimeout(() => {
+          animating = false;
           element.style.background = previousBackground
           newWord()
         }, 500);
@@ -171,7 +196,9 @@
       } else {
         timings[word] = timings[word] + (new Date() - lastTime);
         element.style.background = 'red';
+        animating = true;
         setTimeout(() => {
+          animating = false;
           element.style.background = previousBackground
           newWord()
         }, 500);
