@@ -161,7 +161,7 @@
 
     let checkWord = (word, element, words) => {
       const previousBackground = element.style.background
-      if (words.indexOf(word) == correctIndex) {
+      if (words.indexOf(word) != -1 && words.indexOf(word) == correctIndex) {
         promptCount++;
         timings[word] = new Date() - lastTime;
         element.style.background = 'green';
@@ -171,8 +171,12 @@
         }, 500);
         return true;
       } else {
-        timings[word] = timings[word] + (new Date() - lastTime);
-        element.style.background = 'red';
+        if(words.indexOf(word) != -1) {
+          timings[word] = timings[word] + (new Date() - lastTime);
+          element.style.background = 'red';
+        } else {
+          element.style.background = 'yellow';
+        }
         setTimeout(() => {
           element.style.background = previousBackground
           newWord()
