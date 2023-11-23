@@ -73,15 +73,286 @@
 </head>
 <body>
   <div id="navigation">
-    <a href="./index.html">Hear</a>
-    <a href="./speak.html">Speak</a>
+    <a href="?type=hear">Hear</a>
+    <a href="?type=speak">Speak</a>
   </div>
   <div id="responseOptions"></div>
   <progress id="progress" value="0" max="100"> </progress>
   <div id="overlay"></div>
   <script>
-    (function () {
-    const wordLists = [
+    class SightWordsTrainer {
+      constructor(wordLists) {
+        this.wordLists = wordLists;
+        this.words = []
+        this.timings = {}
+        this.correctIndex = -1;
+        this.promptCount = 0;
+        this.lastTime = new Date();
+        this.animating = false;
+        this.allTimings = this.loadAllTimings();
+        this.stopGame();
+      }
+
+      loadAllTimings() {
+        const storedTimings = localStorage.getItem("storedTimings");
+        if (storedTimings) {
+          return JSON.parse(storedTimings)
+        } else {
+          return wordLists.map(wordlist => {
+            return wordlist.reduce((obj, word) => {
+              obj[word] = 100000
+              return obj;
+            }, {})
+          })
+        }
+      }
+
+      saveAllTimings() {
+        localStorage.setItem("storedTimings", JSON.stringify(this.allTimings));
+      }
+
+      getNthWorstWord(wordIndex) {
+        const sortedTimings = Object.entries(this.timings).sort(([,a],[,b]) => b-a);
+        return sortedTimings[wordIndex][0]
+      }
+
+      startGame(wordListIndex) {
+        this.words = this.wordLists[wordListIndex]
+        this.timings = this.allTimings[wordListIndex]
+        this.newWord();
+        this.hideOverlay();
+      }
+
+      showOverlay() {
+        const overlay = document.getElementById('overlay')
+        overlay.innerHTML = ''
+        overlay.append(...this.wordLists.map((wordList, index) => {
+          let result = document.createElement('button')
+          result.className = 'wordlist-option'
+          result.innerHTML = wordList.map(word => `<div>${word}: ${(this.allTimings[index][word]/1000).toFixed(1)}</div>`).join('')
+          result.onclick = () => this.startGame(index)
+          return result
+        }))
+        overlay.style.display = 'grid';
+      }
+
+      hideOverlay() {
+        document.getElementById('overlay').style.display = 'none';
+      }
+
+      stopGame() {
+        this.promptCount = 0;
+        this.saveAllTimings();
+        this.showOverlay();
+      }
+
+      newWord() {
+        if(this.promptCount >= 10) {
+          this.stopGame();
+        } else {
+          let nextWord = this.getNthWorstWord(0);
+          if (this.words.indexOf(nextWord) == this.correctIndex) {
+            nextWord = this.getNthWorstWord(1);
+          }
+          this.correctIndex = this.words.indexOf(nextWord);
+          this.speakCurrentWord()
+          this.lastTime = new Date();
+          this.showWords()
+        }
+      }
+
+      speakCurrentWord() {
+        this.speak(this.words[this.correctIndex])
+      }
+
+      flashElement(element, color, callback) {
+        const previousBackground = element.style.background
+        element.style.background = color
+        this.animating = true
+        setTimeout(() => {
+          this.animating = false
+          element.style.background = previousBackground
+          callback()
+        }, 500);
+      }
+
+      checkWord(word, element) {
+        if (this.animating) return;
+        if (this.words.indexOf(word) != -1 && this.words.indexOf(word) == this.correctIndex) {
+          this.promptCount++;
+          this.timings[word] = new Date() - this.lastTime;
+          this.flashElement(element, 'green', this.newWord.bind(this))
+          return true;
+        } else {
+          this.timings[word] = this.timings[word] + (new Date() - this.lastTime);
+          this.flashElement(element, 'red', this.newWord.bind(this))
+          return false;
+        }
+      }
+
+      randomWordThatIsNot(word) {
+        let otherWords = this.words.slice()
+        otherWords.splice(this.words.indexOf(word), 1)
+        return otherWords[Math.floor(Math.random() * otherWords.length)]
+      }
+
+      randomIncorrectWord() {
+        return this.randomWordThatIsNot(this.correctWord())
+      }
+
+      correctWord() {
+        return this.words[this.correctIndex]
+      }
+    }
+
+    class HearSightWordsTrainer extends SightWordsTrainer {
+      constructor(wordLists) {
+        super(wordLists)
+      }
+
+      speak(text) {
+        window.speechSynthesis.cancel()
+        const utterance = new SpeechSynthesisUtterance(text)
+        utterance.rate = 0.8;
+        utterance.lang = 'en-US';
+        window.speechSynthesis.speak(utterance);
+      }
+
+      showWords() {
+        const container = document.getElementById('responseOptions')
+        container.innerHTML = '';
+        const wordButtons = [
+          ...Array(10).keys(),
+          this.correctWord(),
+          this.randomIncorrectWord()
+        ].sort(() => Math.random() - 0.5).map(word => {
+          let result = null;
+          if (Number.isInteger(word)) {
+            result = document.createElement('div')
+          } else {
+            result = document.createElement('button')
+            result.innerHTML = word;
+            result['ontouchstart' in window ? 'ontouchstart' : 'onclick'] = (() => this.checkWord(word, result)).bind(this)
+          }
+          result.id = `word-${word}`
+          result.className = 'response-option'
+          return result
+        })
+        container.append(...wordButtons)
+
+        document.getElementById("progress").value = (this.promptCount) / 10 * 100;
+        document.getElementById("progress").innerHTML = (this.promptCount) / 10 * 100;
+
+        Object.keys(this.timings).forEach(key => this.timings[key] += 500)
+      }
+    }
+
+    class SpeakSightWordsTrainer extends SightWordsTrainer {
+      constructor(wordLists) {
+        super(wordLists)
+      }
+
+      showWords() {}
+
+      speak(word) {
+        const container = document.getElementById('responseOptions')
+        container.innerHTML = ''
+        this.listenForWord(word, () => {
+          const result = document.createElement('button')
+          result.innerHTML = word;
+          result.className = 'response-option'
+          result.id = `word-${word}`
+          result.style.gridColumn = '1 / span 3'
+          container.appendChild(result)
+        });
+
+        document.getElementById("progress").value = (this.promptCount) / 10 * 100;
+        document.getElementById("progress").innerHTML = (this.promptCount) / 10 * 100;
+
+        Object.keys(this.timings).forEach(key => this.timings[key] += 500)
+      }
+
+      listenForWord(word, onReady) {
+        const SpeechRecognition = window.SpeechRecognition || webkitSpeechRecognition;
+        const SpeechGrammarList = window.SpeechGrammarList || webkitSpeechGrammarList;
+        const SpeechRecognitionEvent = window.SpeechRecognitionEvent || webkitSpeechRecognitionEvent;
+
+        var speechRecognitionList = new SpeechGrammarList();
+        speechRecognitionList.addFromString('#JSGF V1.0; grammar phrases; public <phrase> = ' + this.words.join(' | ') +';', 1);
+
+        var recognition = new SpeechRecognition();
+        recognition.grammars = speechRecognitionList;
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 10;
+
+        recognition.start();
+
+        let matched = false;
+        let ready = false;
+
+        recognition.onresult = (event) => {
+          const results = event.results
+          let word = results[0][0].transcript;
+
+          let recognizedWords = []
+          for (let resultListIndex = 0; resultListIndex < event.results.length; resultListIndex++) {
+            for (let resultIndex = 0; resultIndex < event.results[resultListIndex].length; resultIndex++) {
+              let result = results[resultListIndex][resultIndex]
+              recognizedWords.push(result.transcript)
+            }
+          }
+
+          console.log(recognizedWords)
+          word = recognizedWords.find(recognizedWord =>
+            this.words.indexOf(recognizedWord) != -1
+          )
+
+          matched = this.checkWord(
+            (word || '').toLowerCase(),
+            document.getElementById(`word-${this.correctWord()}`)
+          )
+        }
+        recognition.onspeechend = () => {
+          console.log('SpeechRecognition.onspeechend')
+        }
+
+        recognition.onerror = (event) => {
+          console.log('Error occurred in recognition: ' + event.error);
+          this.checkWord(
+            'This error is not a match!',
+            document.getElementById(`word-${this.correctWord()}`),
+          )
+        }
+        recognition.onaudiostart = (event) => {
+          console.log('SpeechRecognition.onaudiostart')
+          ready = true;
+          onReady();
+        };
+        recognition.onaudioend = (event) => console.log('SpeechRecognition.onaudioend');
+        recognition.onend = (event) => {
+          console.log('SpeechRecognition.onend')
+          if (ready && !matched && this.correctIndex != -1) {
+            this.checkWord(
+              'This error is not a match!',
+              document.getElementById(`word-${this.correctWord()}`),
+            )
+          }
+        };
+        recognition.onnomatch = () => console.log('SpeechRecognition.onnomatch');
+        recognition.onsoundstart = (event) => console.log('SpeechRecognition.onsoundstart');
+        recognition.onsoundend = (event) => console.log('SpeechRecognition.onsoundend');
+        recognition.onspeechstart = (event) => console.log('SpeechRecognition.onspeechstart');
+        recognition.onstart = (event) => console.log('SpeechRecognition.onstart');
+      }
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const requestedGameType = urlParams.get('type');
+
+    const GameType = !requestedGameType || requestedGameType == 'hear' ? HearSightWordsTrainer : SpeakSightWordsTrainer
+
+    window.game = new GameType([
       ["am", "at", "can", "go", "is"],
       ["like", "me", "see", "the", "to"],
       ["dad", "he", "in", "it", "look"],
@@ -92,163 +363,7 @@
       ["they", "went", "where", "will", "your"],
       ["all", "away", "back", "big", "her"],
       ["over", "this", "want", "who", "with"]
-    ]
-
-    // update this after the game and show timings here.
-    // store in local storage between plays
-
-    let words = [
-      'dad',
-      'he',
-      'in',
-      'it',
-      'look'
-    ]
-    let correctIndex = -1;
-    let promptCount = 0;
-    let lastTime = new Date();
-    let animating = false;
-
-    const storedTimings = localStorage.getItem("storedTimings");
-    let allTimings = {}
-    if (storedTimings) {
-      allTimings = JSON.parse(storedTimings)
-    } else {
-      allTimings = wordLists.map(wordlist => {
-        return wordlist.reduce((obj, word) => {
-          obj[word] = 100000
-          return obj;
-        }, {})
-      })
-    }
-    let timings = words.reduce((obj, word) => {
-      obj[word] = 100000
-      return obj;
-    }, {})
-
-    let getNthWorstWord = (wordIndex) => {
-      const sortedTimings = Object.entries(timings).sort(([,a],[,b]) => b-a);
-      return sortedTimings[wordIndex][0]
-    }
-
-    let startGame = (wordListIndex) => {
-      words = wordLists[wordListIndex]
-      timings = allTimings[wordListIndex]
-      newWord();
-      document.getElementById('overlay').style.display = 'none';
-    }
-
-    let stopGame = () => {
-      promptCount = 0;
-      const storedTimings = localStorage.setItem("storedTimings", JSON.stringify(allTimings));
-      const overlay = document.getElementById('overlay')
-      overlay.innerHTML = ''
-      wordLists.forEach((wordlist, index)=> {
-        const overlay = document.getElementById("overlay")
-        let result = null;
-        result = document.createElement('button')
-        result.className = 'wordlist-option'
-        result.innerHTML = wordlist.map(word => `<div>${word}: ${(allTimings[index][word]/1000).toFixed(1)}</div>`).join('')
-        result.onclick = () => window.startGame(index)
-        overlay.appendChild(result)
-      })
-      overlay.style.display = 'grid';
-    }
-
-    let newWord = () => {
-      if(promptCount >= 10) {
-        stopGame();
-      } else {
-        let nextWord = getNthWorstWord(0);
-        if (words.indexOf(nextWord) == correctIndex) {
-          nextWord = getNthWorstWord(1);
-        }
-        correctIndex = words.indexOf(nextWord);
-        speakCurrentWord()
-        lastTime = new Date();
-        showWords()
-      }
-    }
-
-    window.newWord = newWord;
-    window.startGame = startGame;
-
-    let speakCurrentWord = () => {
-      speak(words[correctIndex])
-    }
-
-    let checkWord = (word, element, words) => {
-      if (animating) {
-        return;
-      }
-      const previousBackground = element.style.background
-      if (words.indexOf(word) == correctIndex) {
-        promptCount++;
-        timings[word] = new Date() - lastTime;
-        element.style.background = 'green';
-        animating = true;
-        setTimeout(() => {
-          animating = false;
-          element.style.background = previousBackground
-          newWord()
-        }, 500);
-        return true;
-      } else {
-        timings[word] = timings[word] + (new Date() - lastTime);
-        element.style.background = 'red';
-        animating = true;
-        setTimeout(() => {
-          animating = false;
-          element.style.background = previousBackground
-          newWord()
-        }, 500);
-        return false;
-      }
-    }
-
-    let showWords = () => {
-      const container = document.getElementById('responseOptions')
-      container.innerHTML=''
-      let wordsToShow = [words[correctIndex]]
-      let otherWordOptions = words.slice()
-      otherWordOptions.splice(correctIndex, 1)
-      wordsToShow.push(otherWordOptions[Math.floor(Math.random() * otherWordOptions.length)]);
-      console.log(words);
-      [...Array(10).keys(), ...wordsToShow].sort(() => Math.random() - 0.5).forEach(word => {
-        let result = null;
-        if (Number.isInteger(word)) {
-          result = document.createElement('div')
-        } else {
-          result = document.createElement('button')
-          result.innerHTML = word;
-          if ('ontouchstart' in window) {
-            result.ontouchstart = () => checkWord(word, result, words)
-          } else {
-            result.onclick = () => checkWord(word, result, words)
-            // result.onclick = ((words) => () => checkWord(word, result, words))(words)
-          }
-        }
-        result.id = `word-${word}`
-        result.className = 'response-option'
-        container.appendChild(result)
-      })
-
-      document.getElementById("progress").value = (promptCount) / 10 * 100;
-      document.getElementById("progress").innerHTML = (promptCount) / 10 * 100;
-
-      Object.keys(timings).forEach(key => timings[key] += 500)
-    }
-
-    let speak = (text) => {
-      window.speechSynthesis.cancel()
-      const utterance = new SpeechSynthesisUtterance(text)
-      utterance.rate = 0.8;
-      utterance.lang = 'en-US';
-      window.speechSynthesis.speak(utterance);
-      console.log('speaking text: ' + text)
-    }
-    stopGame();
-  })();
+    ]);
   </script>
 </body>
 </html>
