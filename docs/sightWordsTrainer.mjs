@@ -11,6 +11,10 @@ export class SightWordsTrainer {
     this.stopGame();
   }
 
+  // methods to override in child classes
+  speak() {}
+  showWords() {}
+
   loadAllTimings() {
     const storedTimings = localStorage.getItem("storedTimings");
     if (storedTimings) {
@@ -38,30 +42,24 @@ export class SightWordsTrainer {
     this.words = this.wordLists[wordListIndex]
     this.timings = this.allTimings[wordListIndex]
     this.newWord();
-    this.hideOverlay();
   }
 
-  showOverlay() {
-    const overlay = document.getElementById('overlay')
-    overlay.innerHTML = ''
-    overlay.append(...this.wordLists.map((wordList, index) => {
+  showWordlistOptions() {
+    const container = document.getElementById('responseOptions')
+    container.innerHTML = ''
+    container.append(...this.wordLists.map((wordList, index) => {
       let result = document.createElement('button')
       result.className = 'wordlist-option'
       result.innerHTML = wordList.map(word => `<div>${word}: ${(this.allTimings[index][word]/1000).toFixed(1)}</div>`).join('')
       result.onclick = () => this.startGame(index)
       return result
     }))
-    overlay.style.display = 'grid';
-  }
-
-  hideOverlay() {
-    document.getElementById('overlay').style.display = 'none';
   }
 
   stopGame() {
     this.promptCount = 0;
     this.saveAllTimings();
-    this.showOverlay();
+    this.showWordlistOptions();
   }
 
   newWord() {

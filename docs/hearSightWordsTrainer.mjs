@@ -1,6 +1,6 @@
 import { SightWordsTrainer } from "./sightWordsTrainer.mjs";
 
-export class HearSightWordsTrainer extends SightWordsTrainer {
+export default class HearSightWordsTrainer extends SightWordsTrainer {
   constructor(wordLists) {
     super(wordLists)
   }
