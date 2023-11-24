@@ -18,7 +18,6 @@ export default class SpeakSightWordsTrainer extends SightWordsTrainer {
     this.used_transcript = ''
     this.speechRecognition.continuous = true;
     this.speechRecognition.maxAlternatives = 10;
-    this.speechRecognition.onstart = this.updateIndicator.bind(this)
     this.speechRecognition.onerror = this.updateIndicator.bind(this)
     this.speechRecognition.onend =  () => this.listening && this.speechRecognition.start()
     this.speechRecognition.onresult = (event) => {
