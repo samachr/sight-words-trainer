@@ -60,6 +60,7 @@ export class SightWordsTrainer {
     this.promptCount = 0;
     this.saveAllTimings();
     this.showWordlistOptions();
+    this.updateProgress();
   }
 
   newWord() {
@@ -92,12 +93,18 @@ export class SightWordsTrainer {
     }, 500);
   }
 
+  updateProgress() {
+    document.getElementById("progress").value = (this.promptCount) / 10 * 100;
+    document.getElementById("progress").innerHTML = (this.promptCount) / 10 * 100;
+  }
+
   checkWord(word, element) {
     if (this.animating) return;
     if (this.words.indexOf(word) != -1 && this.words.indexOf(word) == this.correctIndex) {
       this.promptCount++;
       this.timings[word] = new Date() - this.lastTime;
       this.flashElement(element, 'green', this.newWord.bind(this))
+      this.updateProgress()
       return true;
     } else {
       this.timings[word] = this.timings[word] + (new Date() - this.lastTime);

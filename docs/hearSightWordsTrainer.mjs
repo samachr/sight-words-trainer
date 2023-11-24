@@ -35,9 +35,6 @@ export default class HearSightWordsTrainer extends SightWordsTrainer {
     })
     container.append(...wordButtons)
 
-    document.getElementById("progress").value = (this.promptCount) / 10 * 100;
-    document.getElementById("progress").innerHTML = (this.promptCount) / 10 * 100;
-
     Object.keys(this.timings).forEach(key => this.timings[key] += 500)
   }
 }
