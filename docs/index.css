@@ -62,3 +62,9 @@ progress::-webkit-progress-value {
 #navigation > a.active {
   background: #303030;
 }
+
+#listeningIndicator {
+  position: absolute;
+  bottom: 35px;
+  right: 5px;
+}

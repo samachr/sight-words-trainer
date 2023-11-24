@@ -14,6 +14,8 @@ export class SightWordsTrainer {
   // methods to override in child classes
   speak() {}
   showWords() {}
+  onStart() {}
+  onStop() {}
 
   loadAllTimings() {
     const storedTimings = localStorage.getItem("storedTimings");
@@ -42,6 +44,7 @@ export class SightWordsTrainer {
     this.words = this.wordLists[wordListIndex]
     this.timings = this.allTimings[wordListIndex]
     this.newWord();
+    this.onStart();
   }
 
   showWordlistOptions() {
@@ -61,6 +64,7 @@ export class SightWordsTrainer {
     this.saveAllTimings();
     this.showWordlistOptions();
     this.updateProgress();
+    this.onStop();
   }
 
   newWord() {
