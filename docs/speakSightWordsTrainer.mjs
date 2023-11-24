@@ -10,6 +10,7 @@ export default class SpeakSightWordsTrainer extends SightWordsTrainer {
       this.listeningIndicator = listeningIndicator;
     }
     this.speechRecognition = new webkitSpeechRecognition();
+    this.listening = false
   }
 
   onStart() {
@@ -19,7 +20,7 @@ export default class SpeakSightWordsTrainer extends SightWordsTrainer {
     this.speechRecognition.maxAlternatives = 10;
     this.speechRecognition.onstart = this.updateIndicator.bind(this)
     this.speechRecognition.onerror = this.updateIndicator.bind(this)
-    this.speechRecognition.onend = this.updateIndicator.bind(this)
+    this.speechRecognition.onend =  () => this.listening && this.speechRecognition.start()
     this.speechRecognition.onresult = (event) => {
       const results = []
       for (let resultIndex = 0; resultIndex < event.results[event.resultIndex].length; resultIndex++) {
@@ -44,11 +45,13 @@ export default class SpeakSightWordsTrainer extends SightWordsTrainer {
     };
 
     this.speechRecognition.start();
+    this.listening = true;
   }
 
   onStop() {
     if(this.speechRecognition) {
       this.speechRecognition.stop();
+      this.listening = false;
     }
   }
 
