@@ -20,21 +20,11 @@
 
     let gameModule = requestedGameType == 'hear' ? './hearSightWordsTrainer.mjs' : './speakSightWordsTrainer.mjs';
     import(gameModule).then(module => {
-      window.game = new module.default([
-        ["am", "at", "can", "go", "is"],
-        ["like", "me", "see", "the", "to"],
-        ["dad", "he", "in", "it", "look"],
-        ["mom", "my", "on", "up", "we"],
-        ["and", "are", "come", "for", "got"],
-        ["here", "not", "play", "said", "you"],
-        ["day", "down", "into", "looking", "she"],
-        ["they", "went", "where", "will", "your"],
-        ["all", "away", "back", "big", "her"],
-        ["over", "this", "want", "who", "with"],
-        ["came", "have", "help", "next", "now"],
-        ["didn't", "don't", "eat", "from", "give"],
-        ["good", "make", "out", "of", "saw"]
-      ]);
+      fetch('/wordList.json').then(response => {
+        response.json().then(wordLists => {
+          window.game = new module.default(wordLists)
+        })
+      })
     })
   </script>
 </body>

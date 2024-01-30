@@ -18,17 +18,13 @@ export class SightWordsTrainer {
   onStop() {}
 
   loadAllTimings() {
-    const storedTimings = localStorage.getItem("storedTimings");
-    if (storedTimings) {
-      return JSON.parse(storedTimings)
-    } else {
-      return this.wordLists.map(wordList => {
-        return wordList.reduce((obj, word) => {
-          obj[word] = 100000
-          return obj;
-        }, {})
-      })
-    }
+    const storedTimings = Object.assign({}, ...JSON.parse(localStorage.getItem("storedTimings") || '[]'))
+    return this.wordLists.map(wordList => {
+      return wordList.reduce((obj, word) => {
+        obj[word] = storedTimings[word] || 100000
+        return obj;
+      }, {})
+    })
   }
 
   saveAllTimings() {
