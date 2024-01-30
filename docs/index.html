@@ -20,7 +20,7 @@
 
     let gameModule = requestedGameType == 'hear' ? './hearSightWordsTrainer.mjs' : './speakSightWordsTrainer.mjs';
     import(gameModule).then(module => {
-      fetch('/wordList.json').then(response => {
+      fetch('./wordList.json').then(response => {
         response.json().then(wordLists => {
           window.game = new module.default(wordLists)
         })
