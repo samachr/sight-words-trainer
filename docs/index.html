@@ -22,7 +22,7 @@
     import(gameModule).then(module => {
       fetch('./word-list.csv').then(response => {
         response.text().then(wordLists => {
-          window.game = new module.default(wordLists.split("\n").map(line => line.split(",")))
+          window.game = new module.default(wordLists.trim().split("\n").map(line => line.trim().split(",")))
         })
       })
     })
